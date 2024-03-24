@@ -1,44 +1,32 @@
 const http = require("http");
+const url = require("url");
 const fs = require("fs");
-const path = require("path");
 
-// Create a server
-const server = http.createServer((req, res) => {
-  // Set the content type
-  res.setHeader("Content-Type", "text/html");
-
-  // Routing
-  if (req.url === "/" || req.url === "/index.html") {
-    // Serve the index.html file
-    fs.readFile(path.join(__dirname, "index.html"), (err, data) => {
-      if (err) {
-        res.writeHead(500);
-        res.end("Error loading index.html");
-      } else {
-        res.writeHead(200);
-        res.end(data);
-      }
-    });
-  } else if (req.url === "/about" || req.url === "/about.html") {
-    // Serve the about.html file
-    fs.readFile(path.join(__dirname, "about.html"), (err, data) => {
-      if (err) {
-        res.writeHead(500);
-        res.end("Error loading about.html");
-      } else {
-        res.writeHead(200);
-        res.end(data);
-      }
-    });
-  } else {
-    // Handle 404 - Not Found
-    res.writeHead(404);
-    res.end("Page not found");
-  }
+const page404 = fs.readFileSync("404.html", "utf-8", (err, data) => {
+  if (err) throw err;
+  return data;
 });
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server is running at ${PORT}`);
-});
+http
+  .createServer(function (req, res) {
+    const q = url.parse(req.url, true);
+    let filename = "";
+    if (q.pathname === "/") {
+      filename = "." + "/index.html";
+    } else {
+      filename = "." + q.pathname;
+    }
+
+    fs.readFile(filename, function (err, data) {
+      if (err) {
+        res.writeHead(404, { "Content-Type": "text/html" });
+        res.write(page404);
+        return res.end();
+      } else {
+        res.writeHead(200, { "Content-Type": "text/html" });
+        res.write(data);
+        return res.end();
+      }
+    });
+  })
+  .listen(3000);
